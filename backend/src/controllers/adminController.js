@@ -2,18 +2,28 @@ const User = require('../models/User');
 const Category = require('../models/Category');
 const Question = require('../models/Question');
 const Quiz = require('../models/Quiz');
+const { matchedData } = require('express-validator');
+const pick = (obj, fields) =>
+  fields.reduce((acc, field) => {
+    if (Object.prototype.hasOwnProperty.call(obj, field)) {
+      acc[field] = obj[field];
+    }
+    return acc;
+  }, {});
 
-const crud = (Model) => ({
+const crud = (Model, allowedFields) => ({
   list: async (req, res) => {
     const items = await Model.find().sort({ createdAt: -1 });
     return res.json(items);
   },
   create: async (req, res) => {
-    const item = await Model.create(req.body);
+    const payload = pick(req.body, allowedFields);
+    const item = await Model.create(payload);
     return res.status(201).json(item);
   },
   update: async (req, res) => {
-    const item = await Model.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = pick(req.body, allowedFields);
+    const item = await Model.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true
     });
@@ -35,9 +45,17 @@ const crud = (Model) => ({
   }
 });
 
-const categoryController = crud(Category);
-const questionController = crud(Question);
-const quizController = crud(Quiz);
+const categoryController = crud(Category, ['name', 'description']);
+const questionController = crud(Question, ['text', 'options', 'correctAnswer', 'category', 'difficulty']);
+const quizController = crud(Quiz, [
+  'title',
+  'description',
+  'category',
+  'questions',
+  'questionCount',
+  'durationMinutes',
+  'isActive'
+]);
 
 const listUsers = async (req, res) => {
   const users = await User.find().select('-password').sort({ createdAt: -1 });
@@ -45,9 +63,10 @@ const listUsers = async (req, res) => {
 };
 
 const updateUserRole = async (req, res) => {
+  const { role } = matchedData(req, { locations: ['body'] });
   const user = await User.findByIdAndUpdate(
     req.params.id,
-    { role: req.body.role },
+    { role },
     { new: true, runValidators: true }
   ).select('-password');
 

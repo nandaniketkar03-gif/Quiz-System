@@ -1,5 +1,5 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const validate = require('../middleware/validate');
@@ -17,8 +17,8 @@ router.use(auth, requireAdmin);
 
 router.get('/categories', categoryController.list);
 router.post('/categories', [body('name').trim().notEmpty()], validate, categoryController.create);
-router.put('/categories/:id', categoryController.update);
-router.delete('/categories/:id', categoryController.remove);
+router.put('/categories/:id', [param('id').isMongoId()], validate, categoryController.update);
+router.delete('/categories/:id', [param('id').isMongoId()], validate, categoryController.remove);
 
 router.get('/questions', questionController.list);
 router.post(
@@ -32,8 +32,8 @@ router.post(
   validate,
   questionController.create
 );
-router.put('/questions/:id', questionController.update);
-router.delete('/questions/:id', questionController.remove);
+router.put('/questions/:id', [param('id').isMongoId()], validate, questionController.update);
+router.delete('/questions/:id', [param('id').isMongoId()], validate, questionController.remove);
 
 router.get('/quizzes', quizController.list);
 router.post(
@@ -42,10 +42,15 @@ router.post(
   validate,
   quizController.create
 );
-router.put('/quizzes/:id', quizController.update);
-router.delete('/quizzes/:id', quizController.remove);
+router.put('/quizzes/:id', [param('id').isMongoId()], validate, quizController.update);
+router.delete('/quizzes/:id', [param('id').isMongoId()], validate, quizController.remove);
 
 router.get('/users', listUsers);
-router.patch('/users/:id/role', [body('role').isIn(['user', 'admin'])], validate, updateUserRole);
+router.patch(
+  '/users/:id/role',
+  [param('id').isMongoId(), body('role').isIn(['user', 'admin'])],
+  validate,
+  updateUserRole
+);
 
 module.exports = router;

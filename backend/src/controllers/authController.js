@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { matchedData } = require('express-validator');
 const User = require('../models/User');
 
 const signToken = (user) =>
@@ -7,7 +8,7 @@ const signToken = (user) =>
   });
 
 const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password } = matchedData(req, { locations: ['body'] });
 
   const existing = await User.findOne({ email });
   if (existing) {
@@ -24,7 +25,7 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = matchedData(req, { locations: ['body'] });
 
   const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.comparePassword(password))) {
